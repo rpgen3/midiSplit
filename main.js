@@ -61,8 +61,13 @@
     }
     {
         const {html} = addHideArea('setting flag');
-        const isDrumSplit = rpgen3.addInputBool(html, {
-            label: 'ドラムトラックを楽器ごとに分割',
+        const isSplitDrum = rpgen3.addInputBool(html, {
+            label: 'ドラムチャンネルを楽器ごとに分割',
+            save: true,
+            value: true
+        });
+        const isRemoveChord = rpgen3.addInputBool(html, {
+            label: '和音チャンネルを単音化',
             save: true,
             value: true
         });
@@ -85,6 +90,9 @@
             }).addClass('deleteBtn');
         }).addClass('btn');
     }
+    rpgen3.addBtn(html, 'start split', () => {
+        parseMidi(g_midi);
+    }).addClass('btn');
     const getBPM = midi => {
         const {track} = midi;
         let bpm = 0;
