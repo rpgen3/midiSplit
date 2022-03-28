@@ -32,8 +32,10 @@
         ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
     ].flat());
     Promise.all([
-        'https://rpgen3.github.io/midiSplit/css/deleteBtn.css',
-        'https://rpgen3.github.io/mapMaker/css/table.css',
+        [
+            'deleteBtn',
+            'table'
+        ].map(v => `https://rpgen3.github.io/midiSplit/css/${v}.css`),
         [
             'container',
             'tab',
