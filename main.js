@@ -16,16 +16,24 @@
     $('<h1>').appendTo(head).text('MIDI分割');
     $('<h2>').appendTo(head).text('指定したタイミングでMIDIを分割');
     const rpgen3 = await importAll([
-        'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
-        'https://rpgen3.github.io/piano/mjs/toMIDI.mjs',
         [
             'input',
             'css',
             'util'
         ].map(v => `https://rpgen3.github.io/mylib/export/${v}.mjs`)
     ].flat());
+    const rpgen4 = await importAll([
+        'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
+        [
+            [
+                'fixTrack',
+                'toMIDI'
+            ].map(v => `midi/${v}`)
+        ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
+    ].flat());
     Promise.all([
         'https://rpgen3.github.io/midiSplit/css/deleteBtn.css',
+        'https://rpgen3.github.io/mapMaker/css/table.css',
         [
             'container',
             'tab',
@@ -96,17 +104,21 @@
     })();
     rpgen3.addBtn(html, 'start split', () => {
         const {timeDivision} = g_midi; // 4分音符の長さ
-        const [times, map] = splitLength(
+        output(
             timeDivision,
-            splitPoints,
-            splitChannel(
-                isSplitDrum(),
-                isRemoveChord(),
-                parseMidi(g_midi)
+            getBPM(g_midi),
+            splitLength(
+                timeDivision,
+                splitPoints,
+                splitChannel(
+                    isSplitDrum(),
+                    isRemoveChord(),
+                    parseMidi(g_midi)
+                )
             )
         );
-        const bpm = getBPM(g_midi);
     }).addClass('btn');
+    const table = $('<table>').appendTo(addHideArea('output MIDI file').html);
     const getBPM = midi => {
         const {track} = midi;
         let bpm = 0;
@@ -123,7 +135,7 @@
     };
     const parseMidi = midi => {
         const {track, timeDivision} = midi,
-              heap = new rpgen3.Heap();
+              heap = new rpgen4.Heap();
         for(const {event} of track) {
             const now = new Map;
             let currentTime = 0;
@@ -185,11 +197,11 @@
         const bar = timeDivision * 4,
               end = Math.max(...[...channels.values()].filter(v => v.length).map(v => v[v.length - 1].end)) / bar,
               times = [0, ...[...splitPoints].filter(v => 0 < v && v < end).sort((a, b) => a - b).concat(end).map(v => v * bar)],
-              m = new Map;
+              map = new Map;
         for(const [k, v] of channels) {
-            const a = new Map,
-                  get = makeSafelyGet(a);
-            m.set(k, a);
+            const m = new Map,
+                  get = makeSafelyGet(m);
+            map.set(k, m);
             let i = 0;
             for(const _v of v) {
                 const {start, end} = _v;
@@ -206,6 +218,53 @@
                 }
             }
         }
-        return [times, m];
+        times.pop();
+        return [times, map];
+    };
+    const output = (timeDivision, bpm, [times, map]) => {
+        table.empty();
+        const bar = timeDivision * 4,
+              max = Math.max(...[...map.values()].map(v => [...v.values()].map(v => v.length)).flat()),
+              tr = $('<tr>').appendTo(table);
+        $('<th>').appendTo(tr);
+        for(const v of times) $('<th>').appendTo(tr).text(v / bar);
+        for(const [ch, m] of map) {
+            const tr = $('<tr>').appendTo(table);
+            $('<th>').appendTo(tr).text(ch);
+            for(const time of times) {
+                const td = $('<td>').appendTo(tr);
+                if(!m.has(time)) continue;
+                const t = time / bar,
+                      a = m.get(time);
+                td.text(a.length).css({
+                    backgroundColor: '#73B8E2' + (a.length / max * 0xFF).toString(16)
+                }).on('click', () => {
+                    const _ch = ch.includes('-') ? Number(ch.split('-')[0]) : ch;
+                    rpgen3.download(
+                        rpgen4.toMIDI([[_ch, toMidiTrack(a, time)]], bpm, timeDivision),
+                        `midiSplit - ${ch} at ${t}.mid`
+                    );
+                });
+            }
+        }
+    };
+    const toMidiTrack = (units, time) => {
+        const heap = new rpgen4.Heap();
+        for(const {
+            pitch,
+            velocity,
+            start,
+            end
+        } of units) {
+            for(const [i, v] of [
+                start - time,
+                end - time
+            ].entries()) heap.add(v, {
+                pitch,
+                velocity: i === 0 ? 100 : 0,
+                when: v
+            });
+        }
+        return rpgen4.fixTrack([...heap]);
     };
 })();
