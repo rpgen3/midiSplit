@@ -290,6 +290,10 @@
                     tracks.push([isReset ? i++ : toMidiChannel(ch), toMidiTrack(m.get(time), time)]);
                 }
                 const len = tracks.reduce((p, x) => p + x[1].length, 0);
+                if(isShift) {
+                    const min = Math.min(...tracks.map(v => v[1][0]))
+                    for(const track of tracks) for(const v of track) v.when -= min;
+                }
                 $('<td>').appendTo(tr).text(len).css({
                     backgroundColor: calcColor('#f3981d', max, len)
                 }).on('click', () => {
