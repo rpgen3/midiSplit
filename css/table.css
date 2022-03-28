@@ -7,12 +7,12 @@ table {
 }
 table th {
  padding: 10px;
- border: solid 1px #778ca3;
+ border: solid 1px pink;
  background: #778ca3;
  color: #ffffff;
 }
 table td {
  padding: 10px;
  border: solid 1px #778ca3;
- background: #e9faf9;
+ background: #ffffff;
 }
