@@ -279,7 +279,7 @@
         }
         const a = [...heap];
         if(isShift) {
-            const {when} = heap.first;
+            const {when} = a[0];
             for(const v of a) v.when -= when;
         }
         return rpgen4.fixTrack(a);
