@@ -231,12 +231,13 @@
         table.empty();
         const bar = timeDivision * 4,
               max = Math.max(...[...map.values()].map(v => [...v.values()].map(v => v.length)).flat()),
-              tr = $('<tr>').appendTo(table);
+              tr = $('<tr>').appendTo($('<thead>').appendTo(table));
         $('<th>').appendTo(tr);
         for(const v of times) $('<th>').appendTo(tr).text(v / bar);
+        const tbody = $('<tbody>').appendTo(table);
         for(const ch of [...map.keys()].sort()) {
             const m = map.get(ch);
-            const tr = $('<tr>').appendTo(table);
+            const tr = $('<tr>').appendTo(tbody);
             $('<th>').appendTo(tr).text(ch);
             for(const time of times) {
                 const td = $('<td>').appendTo(tr);
