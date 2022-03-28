@@ -72,12 +72,12 @@
     const [isSplitDrum, isRemoveChord, isShift] = (() => {
         const {html} = addHideArea('setting flag');
         const isSplitDrum = rpgen3.addInputBool(html, {
-            label: 'ドラムチャンネルを楽器ごとに分割',
+            label: 'ドラムを楽器ごとに分割',
             save: true,
             value: true
         });
         const isRemoveChord = rpgen3.addInputBool(html, {
-            label: '和音チャンネルを単音化',
+            label: '和音を単音化',
             save: true,
             value: true
         });
