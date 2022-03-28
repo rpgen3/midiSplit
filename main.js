@@ -279,7 +279,6 @@
         {
             const max = 2 * Math.max(...times.map(time => [...map.values()].filter(v => v.has(time)).reduce((p, x) => p + x.get(time).length, 0))),
                   tr = $('<tr>').appendTo(tbody);
-            console.log(max)
             $('<th>').appendTo(tr).text('all');
             for(const time of times) {
                 const tracks = [];
