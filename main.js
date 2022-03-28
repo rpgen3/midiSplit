@@ -277,7 +277,11 @@
                 when: v
             });
         }
-        const shift = isShift ? heap.first.when : 0;
-        return rpgen4.fixTrack([...heap].map(v => v.when - shift));
+        const a = [...heap];
+        if(isShift) {
+            const {when} = heap.first;
+            for(const v of a) v.when -= when;
+        }
+        return rpgen4.fixTrack(a);
     };
 })();
