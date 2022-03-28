@@ -69,7 +69,7 @@
             g_midi = v;
         });
     }
-    const [isSplitDrum, isRemoveChord] = (() => {
+    const [isSplitDrum, isRemoveChord, isShift] = (() => {
         const {html} = addHideArea('setting flag');
         const isSplitDrum = rpgen3.addInputBool(html, {
             label: 'ドラムチャンネルを楽器ごとに分割',
@@ -81,7 +81,12 @@
             save: true,
             value: true
         });
-        return [isSplitDrum, isRemoveChord];
+        const isShift = rpgen3.addInputBool(html, {
+            label: '無音部分を削除し詰める',
+            save: true,
+            value: true
+        });
+        return [isSplitDrum, isRemoveChord, isShift];
     })();
     const splitPoints = (() => {
         const {html} = addHideArea('setting split point');
@@ -102,10 +107,11 @@
         }).addClass('btn');
         return list;
     })();
-    rpgen3.addBtn(html, 'start split', () => {
+    rpgen3.addBtn(main, 'start split', () => {
         const {timeDivision} = g_midi; // 4分音符の長さ
         output(
             timeDivision,
+            isShift(),
             getBPM(g_midi),
             splitLength(
                 timeDivision,
@@ -221,14 +227,15 @@
         times.pop();
         return [times, map];
     };
-    const output = (timeDivision, bpm, [times, map]) => {
+    const output = (timeDivision, isShift, bpm, [times, map]) => {
         table.empty();
         const bar = timeDivision * 4,
               max = Math.max(...[...map.values()].map(v => [...v.values()].map(v => v.length)).flat()),
               tr = $('<tr>').appendTo(table);
         $('<th>').appendTo(tr);
         for(const v of times) $('<th>').appendTo(tr).text(v / bar);
-        for(const [ch, m] of map) {
+        for(const ch of [...map.keys()].sort()) {
+            const m = map.get(ch);
             const tr = $('<tr>').appendTo(table);
             $('<th>').appendTo(tr).text(ch);
             for(const time of times) {
@@ -237,18 +244,23 @@
                 const t = time / bar,
                       a = m.get(time);
                 td.text(a.length).css({
-                    backgroundColor: '#73B8E2' + (a.length / max * 0xFF).toString(16)
+                    backgroundColor: '#73B8E2' + (a.length / max * 0xFF | 0).toString(16)
                 }).on('click', () => {
-                    const _ch = ch.includes('-') ? Number(ch.split('-')[0]) : ch;
+                    const _ch = String(ch),
+                          __ch = Number(_ch.includes('-') ? _ch.split('-')[0] : _ch);
                     rpgen3.download(
-                        rpgen4.toMIDI([[_ch, toMidiTrack(a, time)]], bpm, timeDivision),
+                        rpgen4.toMIDI({
+                            tracks: [[__ch, toMidiTrack(a, time, isShift)]],
+                            bpm,
+                            div: timeDivision
+                        }),
                         `midiSplit - ${ch} at ${t}.mid`
                     );
                 });
             }
         }
     };
-    const toMidiTrack = (units, time) => {
+    const toMidiTrack = (units, time, isShift) => {
         const heap = new rpgen4.Heap();
         for(const {
             pitch,
@@ -265,6 +277,7 @@
                 when: v
             });
         }
-        return rpgen4.fixTrack([...heap]);
+        const shift = isShift ? heap.first.when : 0;
+        return rpgen4.fixTrack([...heap].map(v => v.when - shift));
     };
 })();
