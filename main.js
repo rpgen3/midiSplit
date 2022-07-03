@@ -123,7 +123,7 @@
             timeDivision,
             isShift(),
             isReset(),
-            [...rpgen4.getTempos(g_midi)][0][1],
+            rpgen4.toggleTempoAndBpm([...rpgen4.getTempos(g_midi)][0][1]),
             splitLength(
                 timeDivision,
                 splitPoints,
