@@ -26,7 +26,9 @@
         'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
         [
             [
-                'fixTrack',
+                'MidiNote',
+                'MidiNoteMessage',
+                'getTempos',
                 'toMIDI'
             ].map(v => `midi/${v}`)
         ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
@@ -121,77 +123,27 @@
             timeDivision,
             isShift(),
             isReset(),
-            getBPM(g_midi),
+            [...rpgen4.getTempos(g_midi)][0][1],
             splitLength(
                 timeDivision,
                 splitPoints,
                 splitChannel(
                     isSplitDrum(),
                     isRemoveChord(),
-                    parseMidi(g_midi)
+                    rpgen4.MidiNote.makeArray(g_midi)
                 )
             )
         );
     }).addClass('btn');
     const table = $('<table>').appendTo(addHideArea('output MIDI file').html);
-    const getBPM = midi => {
-        const {track} = midi;
-        let bpm = 0;
-        for(const {event} of track) {
-            for(const v of event) {
-                if(v.type !== 0xFF || v.metaType !== 0x51) continue;
-                bpm = 6E7 / v.data;
-                break;
-            }
-            if(bpm) break;
-        }
-        if(bpm) return bpm;
-        else throw 'BPM is none.';
-    };
-    const parseMidi = midi => {
-        const {track, timeDivision} = midi,
-              heap = new rpgen4.Heap();
-        for(const {event} of track) {
-            const now = new Map;
-            let currentTime = 0;
-            for(const {deltaTime, type, data, channel} of event) {
-                currentTime += deltaTime;
-                if(type !== 8 && type !== 9) continue;
-                const [pitch, velocity] = data,
-                      isNoteOFF = type === 8 || !velocity;
-                if(now.has(pitch) && isNoteOFF) {
-                    const unit = now.get(pitch);
-                    unit.end = currentTime;
-                    heap.add(unit.start, unit);
-                    now.delete(pitch);
-                }
-                else if(!isNoteOFF) now.set(pitch, new MidiUnit({
-                    ch: channel,
-                    pitch,
-                    velocity,
-                    start: currentTime
-                }));
-            }
-        }
-        return heap;
-    };
-    class MidiUnit {
-        constructor({ch, pitch, velocity, start}){
-            this.ch = ch;
-            this.pitch = pitch;
-            this.velocity = velocity;
-            this.start = start;
-            this.end = -1;
-        }
-    }
     const makeSafelyGet = m => k => {
         if(!m.has(k)) m.set(k, []);
         return m.get(k);
     };
-    const splitChannel = (isSplitDrum, isRemoveChord, heap) => {
+    const splitChannel = (isSplitDrum, isRemoveChord, midiNoteArray) => {
         const m = new Map,
               get = makeSafelyGet(m);
-        for(const v of heap) {
+        for(const v of midiNoteArray) {
             const {ch, pitch} = v;
             if(ch === 9 && isSplitDrum) get(`${ch}-${pitch}`).push(v);
             else {
@@ -241,6 +193,11 @@
         const ch = String(str);
         return Number(ch.includes('-') ? ch.split('-')[0] : ch);
     }
+    const shiftMidiNoteArray = (midiNoteArray, time) => midiNoteArray.map(v => new rpgen4.MidiNote({
+        ...v,
+        start: v.start - time,
+        end: v.end - time
+    }));
     const output = (timeDivision, isShift, isReset, bpm, [times, map]) => {
         table.empty();
         const bar = timeDivision * 4,
@@ -257,7 +214,7 @@
             for(const time of times) {
                 if(!m.has(time)) continue;
                 const t = time / bar,
-                      a = toMidiTrack(m.get(time), time);
+                      a = rpgen4.MidiNoteMessage.makeArray(shiftMidiNoteArray(m.get(time), time));
                 if(isShift) {
                     const {when} = a[0];
                     for(const v of a) v.when -= when;
@@ -286,7 +243,10 @@
                 for(const ch of sorted) {
                     const m = map.get(ch);
                     if(!m.has(time)) continue;
-                    tracks.push([isReset ? i++ : toMidiChannel(ch), toMidiTrack(m.get(time), time)]);
+                    tracks.push([
+                        isReset ? i++ : toMidiChannel(ch),
+                        rpgen4.MidiNoteMessage.makeArray(shiftMidiNoteArray(m.get(time), time))
+                    ]);
                 }
                 const len = tracks.reduce((p, x) => p + x[1].length, 0);
                 if(isShift) {
@@ -307,24 +267,5 @@
                 });
             }
         }
-    };
-    const toMidiTrack = (units, time) => {
-        const heap = new rpgen4.Heap();
-        for(const {
-            pitch,
-            velocity,
-            start,
-            end
-        } of units) {
-            for(const [i, v] of [
-                start - time,
-                end - time
-            ].entries()) heap.add(v, {
-                pitch,
-                velocity: i === 0 ? 100 : 0,
-                when: v
-            });
-        }
-        return rpgen4.fixTrack([...heap]);
     };
 })();
