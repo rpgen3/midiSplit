@@ -16,23 +16,16 @@
     $('<h1>').appendTo(head).text('MIDI分割');
     $('<h2>').appendTo(head).text('指定したタイミングでMIDIを分割');
     const rpgen3 = await importAll([
-        [
-            'input',
-            'css',
-            'util'
-        ].map(v => `https://rpgen3.github.io/mylib/export/${v}.mjs`)
-    ].flat());
+        'input',
+        'css',
+        'util'
+    ].map(v => `https://rpgen3.github.io/mylib/export/${v}.mjs`));
     const rpgen4 = await importAll([
-        'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
-        [
-            [
-                'MidiNote',
-                'MidiNoteMessage',
-                'getTempos',
-                'toMIDI'
-            ].map(v => `midi/${v}`)
-        ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
-    ].flat());
+        'MidiNote',
+        'MidiNoteMessage',
+        'getTempos',
+        'toMIDI'
+    ].map(v => `https://rpgen3.github.io/piano/mjs/midi/${v}.mjs`));
     Promise.all([
         [
             'deleteBtn',
