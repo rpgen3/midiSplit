@@ -23,7 +23,7 @@
     const rpgen4 = await importAll([
         'MidiNote',
         'MidiNoteMessage',
-        'getTempos',
+        'MidiTempoMessage',
         'toMIDI'
     ].map(v => `https://rpgen3.github.io/piano/mjs/midi/${v}.mjs`));
     Promise.all([
@@ -116,7 +116,7 @@
             timeDivision,
             isShift(),
             isReset(),
-            rpgen4.toggleTempoAndBpm([...rpgen4.getTempos(g_midi)][0][1]),
+            rpgen4.MidiTempoMessage.makeArray(g_midi)[0].bpm,
             splitLength(
                 timeDivision,
                 splitPoints,
