@@ -137,11 +137,11 @@
         const m = new Map,
               get = makeSafelyGet(m);
         for(const v of midiNoteArray) {
-            const {ch, pitch} = v;
-            if(ch === 9 && isSplitDrum) get(`${ch}-${pitch}`).push(v);
+            const {channel, pitch} = v;
+            if(channel === 9 && isSplitDrum) get(`${channel}-${pitch}`).push(v);
             else {
-                const a = get(ch);
-                if(ch !== 9 && isRemoveChord && a.length) {
+                const a = get(channel);
+                if(channel !== 9 && isRemoveChord && a.length) {
                     const _v = a[a.length - 1];
                     if(v.start === _v.start) {
                         if(v.end < _v.end) a.pop();
@@ -183,8 +183,8 @@
     };
     const calcColor = (rgb, max, value) => rgb + (value / max * 0xFF | 0).toString(16);
     const toMidiChannel = str => {
-        const ch = String(str);
-        return Number(ch.includes('-') ? ch.split('-')[0] : ch);
+        const channel = String(str);
+        return Number(channel.includes('-') ? channel.split('-')[0] : channel);
     }
     const shiftMidiNoteArray = (midiNoteArray, time) => midiNoteArray.map(v => new rpgen4.MidiNote({
         ...v,
@@ -200,10 +200,10 @@
         for(const v of times) $('<th>').appendTo(tr).text(v / bar + 1);
         const tbody = $('<tbody>').appendTo(table),
               sorted = [...map.keys()].sort();
-        for(const ch of sorted) {
-            const m = map.get(ch),
+        for(const channel of sorted) {
+            const m = map.get(channel),
                   tr = $('<tr>').appendTo(tbody);
-            $('<th>').appendTo(tr).text(ch);
+            $('<th>').appendTo(tr).text(channel);
             for(const time of times) {
                 if(!m.has(time)) continue;
                 const t = time / bar,
@@ -217,11 +217,11 @@
                 }).on('click', () => {
                     rpgen3.download(
                         rpgen4.toMIDI({
-                            tracks: [[toMidiChannel(ch), a]],
+                            tracks: [[toMidiChannel(channel), a]],
                             bpm,
                             div: timeDivision
                         }),
-                        `midiSplit - ${ch} at ${t}.mid`
+                        `midiSplit - ${channel} at ${t}.mid`
                     );
                 });
             }
@@ -233,11 +233,11 @@
             for(const time of times) {
                 const tracks = [];
                 let i = 0;
-                for(const ch of sorted) {
-                    const m = map.get(ch);
+                for(const channel of sorted) {
+                    const m = map.get(channel);
                     if(!m.has(time)) continue;
                     tracks.push([
-                        isReset ? i++ : toMidiChannel(ch),
+                        isReset ? i++ : toMidiChannel(channel),
                         rpgen4.MidiNoteMessage.makeArray(shiftMidiNoteArray(m.get(time), time))
                     ]);
                 }
